@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     cookie_samesite: str = "lax"
     anthropic_api_key: str | None = None
+    grading_model: str = "claude-sonnet-5"
     runner_shared_secret: str | None = None
     runner_url: str | None = None
 

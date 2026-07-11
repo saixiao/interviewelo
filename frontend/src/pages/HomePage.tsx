@@ -12,8 +12,18 @@ const MODES: { category: Category; title: string; description: string; to?: stri
     to: '/typing',
   },
   { category: 'coding', title: 'Coding Problems', description: 'Full LC-style problems with hidden test cases.' },
-  { category: 'approach', title: 'Quick-Fire Approach', description: 'Rapid-fire problems, plain-English strategy only.' },
-  { category: 'design', title: 'System Design', description: 'Design a system, get LLM follow-ups and a grade.' },
+  {
+    category: 'approach',
+    title: 'Quick-Fire Approach',
+    description: 'Rapid-fire problems, plain-English strategy only.',
+    to: '/approach',
+  },
+  {
+    category: 'design',
+    title: 'System Design',
+    description: 'Design a system, get LLM follow-ups and a grade.',
+    to: '/design',
+  },
 ]
 
 export function HomePage() {

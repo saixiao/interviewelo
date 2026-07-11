@@ -134,7 +134,7 @@ def category_ratings(db: Session, user_id: UUID) -> dict[str, UserRating]:
 
 
 def overall_rating(db: Session, user_id: UUID) -> int:
-    """Mean of the four category ratings. Unplayed categories count at the
+    """Mean of the category ratings. Unplayed categories count at the
     starting rating so the overall number is meaningful from day one and
     playing every mode is what raises it."""
     ratings = category_ratings(db, user_id)

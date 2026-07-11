@@ -12,25 +12,22 @@ interface EloHistoryPoint {
   created_at: string
 }
 
-// Validated (node scripts/validate_palette.js) categorical slots 1-4 from the
+// Validated (node scripts/validate_palette.js) categorical slots 1-3 from the
 // dataviz skill's reference palette, dark-mode column, against our #0a0a0a
-// surface: PASS on lightness/chroma/contrast, WARN (floor-band, 10.3 dE) on
-// green<->yellow CVD separation -- mitigated below with direct labels.
+// surface: PASS on lightness/chroma/contrast.
 const CATEGORY_COLOR: Record<Category, string> = {
   typing: '#3987e5',
-  coding: '#199e70',
   approach: '#c98500',
   design: '#008300',
 }
 
 const CATEGORY_LABEL: Record<Category, string> = {
   typing: 'Type Maxxing',
-  coding: 'Coding Problems',
   approach: 'Quick-Fire Approach',
   design: 'System Design',
 }
 
-const CATEGORIES: Category[] = ['typing', 'coding', 'approach', 'design']
+const CATEGORIES: Category[] = ['typing', 'approach', 'design']
 
 const WIDTH = 760
 const HEIGHT = 340
@@ -49,7 +46,7 @@ export function StatsPage() {
   }, [])
 
   const byCategory = useMemo(() => {
-    const grouped: Record<Category, EloHistoryPoint[]> = { typing: [], coding: [], approach: [], design: [] }
+    const grouped: Record<Category, EloHistoryPoint[]> = { typing: [], approach: [], design: [] }
     for (const point of history ?? []) {
       grouped[point.category]?.push(point)
     }

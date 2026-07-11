@@ -73,7 +73,7 @@ def test_apply_session_result_creates_rating_at_starting_value(db):
 def test_apply_session_result_beats_expectation_increases_rating(db):
     user_id = uuid.uuid4()
     result = apply_session_result(
-        db, user_id, "coding", score=1.0, difficulty=STARTING_RATING, source_type="submission"
+        db, user_id, "design", score=1.0, difficulty=STARTING_RATING, source_type="submission"
     )
     assert result.delta > 0
     assert result.rating_after > result.rating_before
@@ -82,7 +82,7 @@ def test_apply_session_result_beats_expectation_increases_rating(db):
 def test_apply_session_result_below_expectation_decreases_rating(db):
     user_id = uuid.uuid4()
     result = apply_session_result(
-        db, user_id, "coding", score=0.0, difficulty=STARTING_RATING, source_type="submission"
+        db, user_id, "design", score=0.0, difficulty=STARTING_RATING, source_type="submission"
     )
     assert result.delta < 0
     assert result.rating_after < result.rating_before

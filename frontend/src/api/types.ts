@@ -1,4 +1,4 @@
-export type Category = 'typing' | 'coding' | 'approach' | 'design'
+export type Category = 'typing' | 'approach' | 'design'
 
 export interface CategoryRating {
   category: Category

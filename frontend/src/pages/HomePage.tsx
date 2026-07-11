@@ -11,7 +11,6 @@ const MODES: { category: Category; title: string; description: string; to?: stri
     description: 'Drill precise, fast code syntax under a clock.',
     to: '/typing',
   },
-  { category: 'coding', title: 'Coding Problems', description: 'Full LC-style problems with hidden test cases.' },
   {
     category: 'approach',
     title: 'Quick-Fire Approach',

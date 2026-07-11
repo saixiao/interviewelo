@@ -4,9 +4,9 @@
 
 The user wants to gamify their own coding-interview prep, in the spirit of Human Benchmark: short, snappy, game-like practice sessions with a big satisfying score reveal at the end. The repo is currently empty aside from a one-line README, so this is a from-scratch build. The work is broken into **independently-shippable phases** implemented one at a time, rather than one big build.
 
-Three practice modes, each producing a score that feeds one unified Elo rating (0–3000) across ten named tiers (Noob → Intern → Entry Level → Mid Level → Senior → Staff → Sr. Staff → Principal → Fellow → AGI), so the user can track day-over-day progression toward being interview-ready.
+Six practice modes, each producing a score that feeds one unified Elo rating (0–3000) across ten named tiers (Noob → Intern → Entry Level → Mid Level → Senior → Staff → Sr. Staff → Principal → Fellow → AGI), so the user can track day-over-day progression toward being interview-ready.
 
-An LC-style coding round with sandboxed Python execution was considered (see git history for the scrapped Phase 2 plan) and explicitly dropped from scope — the app covers typing, the quick-fire approach round, and system design only.
+An LC-style coding round with sandboxed Python execution was considered (see git history for the scrapped Phase 2 plan) and explicitly dropped from scope. The app covers typing, the quick-fire approach round, system design, and three multiple-choice quiz modes (Python knowledge, system-design/engineering knowledge, and code complexity analysis) — no code execution anywhere.
 
 Confirmed tech decisions:
 - **Frontend**: React SPA (Vite + TypeScript), deployed to Vercel.
@@ -22,7 +22,8 @@ interviewelo/
 ├── frontend/          # Vite + React + TypeScript SPA (Vercel)
 │   └── src/
 │       ├── api/       # typed fetch client, auth token handling
-│       ├── features/  # typing/, approach/, design/, dashboard/, auth/
+│       ├── features/  # typing/, approach/, design/, quiz/, dashboard/, auth/
+│       ├── hooks/     # useCountdown, useStopwatch, useEscapeKey (shared by 4+ modes)
 │       └── components/# shared UI: SessionShell, BigTimer, ResultsReveal, EloBadge
 ├── backend/           # FastAPI (Fly.io/Render)
 │   └── app/
@@ -32,6 +33,7 @@ interviewelo/
 │       ├── typing/    # snippets + attempts
 │       ├── approach/  # quick-fire sessions + Claude grading
 │       ├── design/    # design sessions + Claude grading/follow-ups
+│       ├── quiz/      # MCQ/select-all question bank, adaptive-difficulty selection
 │       └── llm/       # single Anthropic client wrapper + graders
 └── alembic/, docker-compose.yml (local Postgres for dev)
 ```
@@ -72,14 +74,18 @@ Acing easy content once you're already Senior gains almost nothing; scoring well
 - **Typing**: `net_wpm = wpm × accuracy²`; S = piecewise-linear map (0 at ≤20 net WPM → 1.0 at ≥90 net WPM).
 - **Approach round**: Claude grades each answer 0–100 on a 4-part rubric; S = session average / 100.
 - **System design**: Claude grades the full transcript 0–100 on the prompt's rubric; S = score / 100.
+- **Quiz modes** (python_trivia, systems_trivia, complexity): S = fraction of submitted answers correct (exact-set match against `correct_keys`, no partial credit per answer). A complexity snippet's time/space questions score as two independent answers, so partial credit on a snippet (nail time, miss space) falls out of the session average for free.
 
-**Overall Elo** = mean of the three category ratings (an unplayed category counts at the 500 floor, so the overall number is meaningful from day one and playing all three modes is incentivized). Every update writes an `elo_history` row for charting.
+**Adaptive difficulty selection (quiz modes only)** — the one mechanism no other mode has: content *selection*, not just scoring, adapts to rating. Typing/approach/design all pick content uniformly at random and let the Elo *scoring* math be the only place rating matters; quiz queues instead draw from a difficulty window centered on the user's current rating in that category (±150, widening up to 2x if too few unseen questions match), excluding the user's last ~100 answered questions per category so MCQs can't be gamed by memorizing the letter the way free-text/typing content can't be. Adapted once per session off `rating_before`, not per-question (no CAT-style mid-session re-targeting). See `backend/app/quiz/selection.py`.
+
+**Overall Elo** = mean of the six category ratings (an unplayed category counts at the 500 floor, so the overall number is meaningful from day one and playing every mode is incentivized). Every update writes an `elo_history` row for charting.
 
 ## Core Data Model
 
 ```
 users            (id, email, password_hash, display_name, created_at)
-user_ratings     (user_id, category ∈ {typing,approach,design}, rating, sessions_count)
+user_ratings     (user_id, category ∈ {typing,approach,design,python_trivia,systems_trivia,complexity},
+                  rating, sessions_count)
 elo_history      (id, user_id, category, rating_before, rating_after, delta,
                   source_type, source_id, created_at)
 
@@ -94,6 +100,13 @@ approach_answers (id, session_id, prompt_id, answer_text, grade JSONB, created_a
 design_prompts   (id, difficulty, prompt_md, rubric_md)
 design_sessions  (id, user_id, prompt_id, transcript JSONB[{role,text,ts}],
                   grade JSONB, overall_score, elo_delta, status, created_at)
+
+quiz_questions   (id, category ∈ {python_trivia,systems_trivia,complexity}, topic, difficulty,
+                  prompt_md, code_snippet, language, choices JSONB[{key,label}], correct_keys JSONB[str],
+                  multi_select, dimension ∈ {time,space,null}, group_id -- pairs a complexity
+                  snippet's time+space rows so they render together, explanation_md)
+quiz_sessions    (id, user_id, category, duration_s, elapsed_s, overall_score, elo_delta, created_at)
+quiz_answers     (id, session_id, question_id, selected_keys JSONB[str], correct, created_at)
 ```
 
 ## Phase 0 — Scaffolding, Auth, Elo Shell
@@ -138,6 +151,17 @@ First LLM integration; establishes the `llm/` grading pattern Phase 3 reuses.
 - Polish: tier-up celebration animation, daily-practice prompt on the home screen ("Today: 1 typing sprint, 1 quick-fire, 1 design session"), settings page, mobile-usable typing fallback.
 - Backlog (not in scope now): leaderboards, spaced repetition of weak prompts/snippets, Elo decay.
 
+## Phase 5 — Quiz Modes: Python Knowledge, System Design Knowledge, Complexity Analysis
+
+Three more practice modes, all multiple-choice / select-all-that-apply so no LLM grading is needed at runtime — just compare submitted choice keys against stored `correct_keys`. Three new independent Elo categories (`python_trivia`, `systems_trivia`, `complexity`), bringing Overall Elo to a mean of six.
+
+- One shared schema (`quiz_questions`/`quiz_sessions`/`quiz_answers`) backs all three categories — they're mechanically identical, differing only in category/content-shape. `python_trivia` is strictly Python-language-feature trivia; `systems_trivia` is a broad engineering-knowledge bank (concurrency, databases, distributed systems, data lakes, big data, AI agents, AI serving infra, AI tuning/eval, harnesses, plus classic system-design fundamentals); `complexity` shows a code snippet and asks for its time complexity and space complexity as two linked single-select questions (`dimension`, `group_id`) drawn from one fixed, centralized Big-O choice list (`backend/app/quiz/constants.py`) rather than duplicated per row.
+- **New mechanism vs. every other mode**: content *selection* adapts to the user's rating, not just scoring (see `backend/app/quiz/selection.py`) — a difficulty window centered on `rating_before`, widened if the category is thin, excluding the user's last ~100 answered questions per category so MCQs can't be gamed by repeat exposure the way free-text/typing content can't be.
+- Session mechanic follows typing's Reaction mode (`useCountdown` + `BigTimer`, auto-submit at timeout), not the approach round (which turned out to have no duration/timeout at all, contrary to this doc's original Phase 2 description — worth knowing before using it as a precedent for anything timing-related). Unlike typing, the queue is never padded by repeating items.
+- `GET /quiz/{category}/queue`, `POST /quiz/{category}/attempts` (scores, calls the Elo engine, returns per-question correct/incorrect + `explanation_md` for the review list).
+- Frontend: one shared `features/quiz/` implementation parameterized by category via a dynamic `/quiz/:category` route (not three copy-pasted folders) — `App.tsx`'s only dynamic route segment, deliberately, since these three modes are mechanically identical. Results page is bespoke (score/Elo-delta hero + expandable per-question review cards with explanations), matching approach/design's pattern rather than the plain `ResultsReveal` component (which has no slot for a per-question list and, contrary to earlier assumptions in this doc, is not actually used by every mode — only typing's results page uses it as-is).
+- Seed content: `backend/app/quiz/seed_data_python.py`, `seed_data_systems.py`, `seed_data_complexity.py`, loaded via `python -m app.quiz.seed`. Target ~150-200 questions per trivia category and ~75 complexity snippets, difficulty spread across the full 0–3000 range so every tier has content; question-bank authoring for bulk content like this is delegated to the Fable model rather than written inline.
+
 ## Human-Benchmark-Style UI Pattern (shared across all modes)
 
 Every mode follows the same three-beat loop, built once as shared components:
@@ -162,7 +186,8 @@ Every mode follows the same three-beat loop, built once as shared components:
 
 - `backend/app/elo/engine.py` — tier thresholds, expected-score math, `apply_session_result()`; every mode depends on it.
 - `backend/app/llm/grader.py` — Anthropic client wrapper + structured-output graders for approach and design rounds.
-- `frontend/src/components/ResultsReveal.tsx` — the shared big-number reveal that defines the game feel across all modes.
+- `backend/app/quiz/selection.py` — the adaptive-difficulty question selection every quiz mode depends on.
+- `frontend/src/components/ResultsReveal.tsx` — the shared big-number reveal used by typing's results page (approach/design/quiz build their own bespoke results pages for the per-question review list).
 - `backend/app/models.py` — SQLAlchemy models for the full schema.
 
 ## Verification (per phase)
@@ -170,4 +195,5 @@ Every mode follows the same three-beat loop, built once as shared components:
 - Phase 0: `curl` signup/login/me against local FastAPI; run Elo engine unit tests directly.
 - Phase 1: run a full 1-min typing session in the browser, confirm WPM/accuracy match a manual count, confirm Elo updates in `/me`.
 - Phase 2/3: run a real 10-minute session, confirm Claude's structured grade parses without validation errors and Elo updates sensibly.
-- Phase 4: confirm dashboard charts reflect real `elo_history` rows across all three categories.
+- Phase 4: confirm dashboard charts reflect real `elo_history` rows across all six categories.
+- Phase 5: play a full quiz round in each of the 3 categories, confirm the queue never leaks `correct_keys`/`explanation_md`, complexity's time/space pair renders and scores together, and repeated play doesn't re-serve the same recently-answered questions.

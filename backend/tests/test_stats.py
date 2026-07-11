@@ -82,7 +82,7 @@ def test_summary_defaults_for_new_user(client):
     assert body["tier_floor"] == 300
     assert body["tier_next_floor"] == 600
     assert body["streak_days"] == 0
-    assert len(body["categories"]) == 3
+    assert len(body["categories"]) == 6
     for cat in body["categories"]:
         assert cat["rating"] == 500
         assert cat["best_rating"] == 500

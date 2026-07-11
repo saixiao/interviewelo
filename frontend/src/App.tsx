@@ -15,6 +15,9 @@ import { ApproachInfoPage } from './features/approach/ApproachInfoPage'
 import { DesignPickerPage } from './features/design/DesignPickerPage'
 import { DesignPlayPage } from './features/design/DesignPlayPage'
 import { DesignResultsPage } from './features/design/DesignResultsPage'
+import { QuizPickerPage } from './features/quiz/QuizPickerPage'
+import { QuizSession } from './features/quiz/QuizSession'
+import { QuizResultsPage } from './features/quiz/QuizResultsPage'
 
 function App() {
   return (
@@ -122,6 +125,30 @@ function App() {
         element={
           <RequireAuth>
             <DesignResultsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/quiz/:category"
+        element={
+          <RequireAuth>
+            <QuizPickerPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/quiz/:category/play"
+        element={
+          <RequireAuth>
+            <QuizSession />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/quiz/:category/results"
+        element={
+          <RequireAuth>
+            <QuizResultsPage />
           </RequireAuth>
         }
       />

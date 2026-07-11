@@ -46,7 +46,7 @@ def test_me_returns_starting_ratings_for_new_user(client):
     assert body["email"] == "alice@example.com"
     assert body["overall_rating"] == 500
     assert body["overall_tier"] == "Intern"
-    assert len(body["categories"]) == 3
+    assert len(body["categories"]) == 6
     assert all(c["rating"] == 500 and c["sessions_count"] == 0 for c in body["categories"])
 
 

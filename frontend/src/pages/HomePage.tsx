@@ -26,6 +26,24 @@ const MODES: { category: Category; title: string; description: string; to?: stri
     description: 'Design a system, get LLM follow-ups and a grade.',
     to: '/design',
   },
+  {
+    category: 'python_trivia',
+    title: 'Python Knowledge',
+    description: 'Quick-fire multiple choice on Python language features.',
+    to: '/quiz/python_trivia',
+  },
+  {
+    category: 'systems_trivia',
+    title: 'System Design Knowledge',
+    description: 'Quick-fire trivia on systems, infra, and AI engineering.',
+    to: '/quiz/systems_trivia',
+  },
+  {
+    category: 'complexity',
+    title: 'Complexity Analysis',
+    description: 'Read the code, pick its time and space complexity.',
+    to: '/quiz/complexity',
+  },
 ]
 
 export function HomePage() {
@@ -72,7 +90,7 @@ export function HomePage() {
 
       {summary && <DashboardHero summary={summary} />}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MODES.map((mode) => (
           <ModeTile
             key={mode.category}

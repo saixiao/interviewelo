@@ -10,7 +10,7 @@ STANDARD_K = 24
 # (skill gaps matter less); 400 mirrors standard chess Elo.
 ELO_SPREAD = 400
 
-CATEGORIES = ("typing", "approach", "design")
+CATEGORIES = ("typing", "approach", "design", "python_trivia", "systems_trivia", "complexity")
 
 # (tier name, inclusive lower bound) ordered ascending; upper bound is the next
 # tier's lower bound minus 1, and the last tier runs to MAX_RATING.

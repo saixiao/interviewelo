@@ -12,22 +12,29 @@ interface EloHistoryPoint {
   created_at: string
 }
 
-// Validated (node scripts/validate_palette.js) categorical slots 1-3 from the
+// Validated (node scripts/validate_palette.js) categorical slots 1-6 from the
 // dataviz skill's reference palette, dark-mode column, against our #0a0a0a
-// surface: PASS on lightness/chroma/contrast.
+// surface: PASS on lightness/chroma/contrast, WARN (floor-band, 10.3 dE) on
+// design<->approach CVD separation -- mitigated below with direct labels.
 const CATEGORY_COLOR: Record<Category, string> = {
   typing: '#3987e5',
+  python_trivia: '#199e70',
   approach: '#c98500',
   design: '#008300',
+  systems_trivia: '#9085e9',
+  complexity: '#e66767',
 }
 
 const CATEGORY_LABEL: Record<Category, string> = {
   typing: 'Type Maxxing',
+  python_trivia: 'Python Knowledge',
   approach: 'Quick-Fire Approach',
   design: 'System Design',
+  systems_trivia: 'System Design Knowledge',
+  complexity: 'Complexity Analysis',
 }
 
-const CATEGORIES: Category[] = ['typing', 'approach', 'design']
+const CATEGORIES: Category[] = ['typing', 'python_trivia', 'approach', 'design', 'systems_trivia', 'complexity']
 
 const WIDTH = 760
 const HEIGHT = 340
@@ -46,7 +53,9 @@ export function StatsPage() {
   }, [])
 
   const byCategory = useMemo(() => {
-    const grouped: Record<Category, EloHistoryPoint[]> = { typing: [], approach: [], design: [] }
+    // Derived from CATEGORIES (rather than a hand-listed literal) so adding a
+    // category can't silently drop its points from this grouping again.
+    const grouped = Object.fromEntries(CATEGORIES.map((c) => [c, []])) as Record<Category, EloHistoryPoint[]>
     for (const point of history ?? []) {
       grouped[point.category]?.push(point)
     }

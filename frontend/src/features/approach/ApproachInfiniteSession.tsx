@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { approachApi, streamInfiniteGrade } from './api'
-import { useEscapeKey } from './useEscapeKey'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { RubricLegend } from './RubricScale'
 import type { ChatMessage, InfiniteTurn, QueuePrompt } from './types'
 

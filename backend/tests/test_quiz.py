@@ -1,7 +1,7 @@
 import uuid
 
 from app.elo.constants import STARTING_RATING
-from app.models import QuizAnswer, QuizQuestion, QuizSession
+from app.models import QuizAnswer, QuizQuestion, QuizSession, User, UserRating
 from app.quiz.selection import INITIAL_WINDOW, MAX_WIDENINGS, select_queue
 
 
@@ -114,6 +114,67 @@ def test_select_queue_complexity_returns_time_then_space_pairs(db_session):
     assert chosen[0].group_id == chosen[1].group_id
 
 
+def _set_rating(db_session, user_id, category, rating, sessions_count=15):
+    """Directly seed a UserRating row, bypassing apply_session_result, so a
+    test can pin a user at an exact rating without playing dozens of sessions."""
+    db_session.add(UserRating(user_id=user_id, category=category, rating=rating, sessions_count=sessions_count))
+    db_session.commit()
+
+
+def test_select_queue_difficulty_tracks_rating_low_mid_high(db_session):
+    """The core adaptive-difficulty guarantee: a Noob-rated user, an
+    Intern-rated (default) user, and an AGI-rated user each get a queue
+    whose average difficulty is close to their own rating, strictly
+    increasing as rating increases -- this is what "harder questions as
+    Elo increases" means concretely.
+
+    Seeded densely enough (every 50 points) that the *initial* window alone
+    -- no widening -- already covers target_count candidates at every rating
+    tested, so the resulting average is a direct readout of the unwidened
+    +-INITIAL_WINDOW band, not a widened fallback.
+    """
+    for d in range(100, 2901, 50):
+        _add_trivia_question(db_session, difficulty=d)
+
+    noob = uuid.uuid4()
+    _set_rating(db_session, noob, "python_trivia", rating=150)
+
+    intern = uuid.uuid4()
+    _set_rating(db_session, intern, "python_trivia", rating=STARTING_RATING)
+
+    agi = uuid.uuid4()
+    _set_rating(db_session, agi, "python_trivia", rating=2850)
+
+    def avg_difficulty(user_id, rating):
+        chosen = select_queue(db_session, user_id, "python_trivia", target_count=4)
+        assert len(chosen) == 4  # confirms this ran off the initial window, not a widened one
+        avg = sum(q.difficulty for q in chosen) / len(chosen)
+        assert abs(avg - rating) <= INITIAL_WINDOW
+        return avg
+
+    noob_avg = avg_difficulty(noob, 150)
+    intern_avg = avg_difficulty(intern, STARTING_RATING)
+    agi_avg = avg_difficulty(agi, 2850)
+
+    assert noob_avg < intern_avg < agi_avg
+
+
+def test_select_queue_never_serves_far_below_a_high_raters_level(db_session):
+    """A high-rated user shouldn't be handed a queue dominated by trivially
+    easy content just because easy content exists in the bank."""
+    _add_trivia_question(db_session, difficulty=300)
+    _add_trivia_question(db_session, difficulty=2600)
+    _add_trivia_question(db_session, difficulty=2700)
+
+    high_rater = uuid.uuid4()
+    _set_rating(db_session, high_rater, "python_trivia", rating=2650)
+
+    chosen = select_queue(db_session, high_rater, "python_trivia", target_count=5)
+    difficulties = {q.difficulty for q in chosen}
+    assert 300 not in difficulties
+    assert difficulties == {2600, 2700}
+
+
 # --- API: queue --------------------------------------------------------------
 
 
@@ -132,6 +193,33 @@ def test_queue_without_questions_returns_503(client):
     headers = _auth_headers(client)
     resp = client.get("/quiz/python_trivia/queue", headers=headers)
     assert resp.status_code == 503
+
+
+def test_queue_endpoint_serves_harder_questions_to_higher_rated_users(client, db_session):
+    """End-to-end proof (through the real HTTP endpoint, not just the
+    internal select_queue function) that GET /quiz/{category}/queue reflects
+    the authenticated user's own rating."""
+    for d in range(200, 2801, 200):
+        _add_trivia_question(db_session, difficulty=d)
+
+    low_headers = _auth_headers(client, email="low_rater@example.com")
+    low_user = db_session.query(User).filter_by(email="low_rater@example.com").one()
+    _set_rating(db_session, low_user.id, "python_trivia", rating=300)
+
+    high_headers = _auth_headers(client, email="high_rater@example.com")
+    high_user = db_session.query(User).filter_by(email="high_rater@example.com").one()
+    _set_rating(db_session, high_user.id, "python_trivia", rating=2500)
+
+    low_resp = client.get("/quiz/python_trivia/queue?duration_s=300", headers=low_headers)
+    high_resp = client.get("/quiz/python_trivia/queue?duration_s=300", headers=high_headers)
+    assert low_resp.status_code == 200
+    assert high_resp.status_code == 200
+
+    low_difficulties = [q["difficulty"] for q in low_resp.json()["questions"]]
+    high_difficulties = [q["difficulty"] for q in high_resp.json()["questions"]]
+    assert (sum(low_difficulties) / len(low_difficulties)) < (sum(high_difficulties) / len(high_difficulties))
+    # The low rater should never see the hardest content and vice versa.
+    assert max(low_difficulties) < min(high_difficulties)
 
 
 def test_queue_never_leaks_answers(client, db_session):

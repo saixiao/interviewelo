@@ -38,6 +38,21 @@ def tier_for(rating: int) -> str:
     return tier_name
 
 
+def tier_bounds(rating: int) -> tuple[int, int | None]:
+    """(floor, next_floor) of the tier `rating` falls into, for progress-bar
+    math. `next_floor` is None for the top tier (AGI has no ceiling)."""
+    rating = clamp(rating)
+    floor = TIERS[0][1]
+    next_floor: int | None = TIERS[1][1] if len(TIERS) > 1 else None
+    for i, (_, lower_bound) in enumerate(TIERS):
+        if rating >= lower_bound:
+            floor = lower_bound
+            next_floor = TIERS[i + 1][1] if i + 1 < len(TIERS) else None
+        else:
+            break
+    return floor, next_floor
+
+
 def clamp(rating: int) -> int:
     return max(MIN_RATING, min(MAX_RATING, rating))
 

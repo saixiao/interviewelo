@@ -75,4 +75,6 @@ export const api = {
   logout: () => request<void>('/auth/logout', { method: 'POST' }, false),
   refresh: () => tryRefresh(),
   me: () => request<MeResponse>('/me'),
+  updateMe: (displayName: string) =>
+    request<MeResponse>('/me', { method: 'PATCH', body: JSON.stringify({ display_name: displayName }) }),
 }

@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { apiRequest } from '../api/client'
 import { EloBadge } from '../components/EloBadge'
 import { ModeTile } from '../components/ModeTile'
-import type { Category } from '../api/types'
+import { DashboardHero } from '../components/DashboardHero'
+import type { Category, StatsSummaryResponse } from '../api/types'
 
 const MODES: { category: Category; title: string; description: string; to?: string }[] = [
   {
@@ -27,22 +30,35 @@ const MODES: { category: Category; title: string; description: string; to?: stri
 
 export function HomePage() {
   const { user, logout } = useAuth()
+  const [summary, setSummary] = useState<StatsSummaryResponse | null>(null)
+
+  useEffect(() => {
+    apiRequest<StatsSummaryResponse>('/stats/summary')
+      .then(setSummary)
+      .catch(() => setSummary(null))
+  }, [])
 
   if (!user) return null
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <header className="mb-10 flex items-center justify-between">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-y-3">
         <div>
           <h1 className="text-2xl font-bold">InterviewElo</h1>
           <p className="text-sm text-neutral-500">{user.display_name}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link
             to="/stats"
             className="rounded-md border border-neutral-800 px-3 py-1.5 text-sm text-neutral-400 hover:bg-neutral-900"
           >
             Stats
+          </Link>
+          <Link
+            to="/settings"
+            className="rounded-md border border-neutral-800 px-3 py-1.5 text-sm text-neutral-400 hover:bg-neutral-900"
+          >
+            Settings
           </Link>
           <EloBadge user={user} />
           <button
@@ -53,6 +69,8 @@ export function HomePage() {
           </button>
         </div>
       </header>
+
+      {summary && <DashboardHero summary={summary} />}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {MODES.map((mode) => (

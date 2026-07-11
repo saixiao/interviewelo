@@ -69,3 +69,28 @@ def test_logout_clears_refresh_cookie(client):
 
     refresh_resp = client.post("/auth/refresh")
     assert refresh_resp.status_code == 401
+
+
+def test_update_me_requires_auth(client):
+    resp = client.patch("/me", json={"display_name": "New Name"})
+    assert resp.status_code == 401
+
+
+def test_update_me_changes_display_name(client):
+    token = _signup(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.patch("/me", json={"display_name": "New Name"}, headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["display_name"] == "New Name"
+
+    resp = client.get("/me", headers=headers)
+    assert resp.json()["display_name"] == "New Name"
+
+
+def test_update_me_rejects_blank_display_name(client):
+    token = _signup(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.patch("/me", json={"display_name": ""}, headers=headers)
+    assert resp.status_code == 422

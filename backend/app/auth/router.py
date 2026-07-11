@@ -2,7 +2,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
-from app.auth.schemas import AccessTokenResponse, LoginRequest, MeResponse, SignupRequest
+from app.auth.schemas import AccessTokenResponse, LoginRequest, MeResponse, SignupRequest, UpdateMeRequest
 from app.auth.security import (
     REFRESH_TOKEN_TYPE,
     InvalidTokenError,
@@ -116,4 +116,15 @@ def logout(response: Response) -> None:
 
 @router.get("/me", response_model=MeResponse)
 def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> MeResponse:
+    return _build_me_response(db, user)
+
+
+@router.patch("/me", response_model=MeResponse)
+def update_me(
+    body: UpdateMeRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MeResponse:
+    user.display_name = body.display_name
+    db.commit()
     return _build_me_response(db, user)

@@ -4,6 +4,7 @@ import { SignupPage } from './auth/SignupPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { HomePage } from './pages/HomePage'
 import { StatsPage } from './pages/StatsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { TypingPickerPage } from './features/typing/TypingPickerPage'
 import { TypingPlayPage } from './features/typing/TypingPlayPage'
 import { TypingResultsPage } from './features/typing/TypingResultsPage'
@@ -33,6 +34,14 @@ function App() {
         element={
           <RequireAuth>
             <StatsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <RequireAuth>
+            <SettingsPage />
           </RequireAuth>
         }
       />

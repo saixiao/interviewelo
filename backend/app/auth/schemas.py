@@ -14,6 +14,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class UpdateMeRequest(BaseModel):
+    display_name: str = Field(min_length=1, max_length=100)
+
+
 class AccessTokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

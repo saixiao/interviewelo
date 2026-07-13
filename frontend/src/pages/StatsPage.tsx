@@ -55,7 +55,10 @@ export function StatsPage() {
   const byCategory = useMemo(() => {
     // Derived from CATEGORIES (rather than a hand-listed literal) so adding a
     // category can't silently drop its points from this grouping again.
-    const grouped = Object.fromEntries(CATEGORIES.map((c) => [c, []])) as Record<Category, EloHistoryPoint[]>
+    const grouped = CATEGORIES.reduce<Record<Category, EloHistoryPoint[]>>((acc, c) => {
+      acc[c] = []
+      return acc
+    }, {} as Record<Category, EloHistoryPoint[]>)
     for (const point of history ?? []) {
       grouped[point.category]?.push(point)
     }

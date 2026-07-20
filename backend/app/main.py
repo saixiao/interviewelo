@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.approach.router import router as approach_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
-from app.design.router import router as design_router
 from app.quiz.router import router as quiz_router
 from app.stats.router import router as stats_router
 from app.typing.router import router as typing_router
@@ -24,7 +23,6 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(typing_router)
 app.include_router(approach_router)
-app.include_router(design_router)
 app.include_router(quiz_router)
 app.include_router(stats_router)
 

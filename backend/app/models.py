@@ -147,43 +147,6 @@ class ApproachAnswer(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
-class DesignPrompt(Base):
-    """A system-design interview prompt ("design a URL shortener") with concrete
-    constraints baked into `prompt_md`. `rubric_md` is the ground-truth grading
-    rubric describing what a strong answer covers -- the judge grades against it
-    and it's never sent to the client, exactly like approach_prompts.grading_notes_md."""
-
-    __tablename__ = "design_prompts"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=_uuid)
-    difficulty: Mapped[int] = mapped_column(Integer, nullable=False)
-    title: Mapped[str] = mapped_column(String(200), nullable=False)
-    prompt_md: Mapped[str] = mapped_column(String, nullable=False)
-    rubric_md: Mapped[str] = mapped_column(String, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
-
-
-class DesignSession(Base):
-    """One timed system-design session. `transcript` is an append-only list of
-    {role: "user"|"interviewer", text, ts} entries persisted incrementally so a
-    long session survives a page refresh; `grade` holds Claude's structured
-    debrief once the session is finished and graded."""
-
-    __tablename__ = "design_sessions"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=_uuid)
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False, index=True)
-    prompt_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("design_prompts.id"), nullable=False)
-    duration_s: Mapped[int] = mapped_column(Integer, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="in_progress")
-    transcript: Mapped[list] = mapped_column(JSONVariant, nullable=False, default=list)
-    grade: Mapped[dict | None] = mapped_column(JSONVariant, nullable=True)
-    overall_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    elo_delta: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
-    graded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
-
 class QuizQuestion(Base):
     """One multiple-choice / select-all-that-apply question, shared by all
     three quiz categories (python_trivia, systems_trivia, complexity) since

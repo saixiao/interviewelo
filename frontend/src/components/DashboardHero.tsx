@@ -3,7 +3,6 @@ import type { StatsSummaryResponse } from '../api/types'
 const MODE_LABELS: Record<string, string> = {
   typing: 'a typing sprint',
   approach: 'a quick-fire round',
-  design: 'a design session',
   python_trivia: 'a Python quiz',
   systems_trivia: 'a systems quiz',
   complexity: 'a complexity round',

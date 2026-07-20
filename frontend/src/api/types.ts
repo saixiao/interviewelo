@@ -1,4 +1,4 @@
-export type Category = 'typing' | 'approach' | 'design' | 'python_trivia' | 'systems_trivia' | 'complexity'
+export type Category = 'typing' | 'approach' | 'python_trivia' | 'systems_trivia' | 'complexity'
 
 export interface CategoryRating {
   category: Category

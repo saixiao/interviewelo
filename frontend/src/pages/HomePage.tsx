@@ -21,12 +21,6 @@ const MODES: { category: Category; title: string; description: string; to?: stri
     to: '/approach',
   },
   {
-    category: 'design',
-    title: 'System Design',
-    description: 'Design a system, get LLM follow-ups and a grade.',
-    to: '/design',
-  },
-  {
     category: 'python_trivia',
     title: 'Python Knowledge',
     description: 'Quick-fire multiple choice on Python language features.',

@@ -1,7 +1,7 @@
 """Adaptive-difficulty question selection for the quiz modes.
 
-Unlike typing/approach/design (which all pick content uniformly at random
-and let the Elo *scoring* math be the only place rating matters), quiz
+Unlike typing/approach (which pick content uniformly at random and let the
+Elo *scoring* math be the only place rating matters), quiz
 content *selection* itself adapts to the user's current rating: harder
 questions get served as rating climbs. Kept separate from router.py so it's
 unit-testable without a TestClient, mirroring elo/engine.py.

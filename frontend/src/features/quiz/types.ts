@@ -54,3 +54,9 @@ export interface QuizAttemptResponse {
   tier_before: string
   tier_after: string
 }
+
+export interface RevealResponse {
+  correct: boolean
+  correct_keys: string[]
+  explanation_md: string
+}

@@ -56,3 +56,13 @@ class QuizAttemptResponse(BaseModel):
     delta: int
     tier_before: str
     tier_after: str
+
+
+class RevealRequest(BaseModel):
+    selected_keys: list[str]
+
+
+class RevealResponse(BaseModel):
+    correct: bool
+    correct_keys: list[str]
+    explanation_md: str

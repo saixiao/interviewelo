@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -13,6 +15,8 @@ from app.quiz.schemas import (
     QuizAttemptRequest,
     QuizAttemptResponse,
     QuizQueueResponse,
+    RevealRequest,
+    RevealResponse,
 )
 from app.quiz.scoring import is_correct, mean_difficulty, overall_score
 from app.quiz.selection import select_queue
@@ -75,6 +79,28 @@ def get_queue(
         category=category,
         duration_s=duration_s,
         questions=[_serialize_question(q) for q in questions],
+    )
+
+
+@router.post("/questions/{question_id}/reveal", response_model=RevealResponse)
+def reveal_question(
+    question_id: UUID,
+    body: RevealRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),  # noqa: ARG001 -- auth-gated like every other quiz route
+) -> RevealResponse:
+    """Single-question, non-persisting reveal used by every quiz category's
+    per-question "show correct answer" flow -- deliberately separate from
+    /attempts so the session's official answer list (assembled client-side
+    and submitted once at the end) is completely unaffected by this call."""
+    q = db.query(QuizQuestion).filter(QuizQuestion.id == question_id).one_or_none()
+    if q is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown question id")
+
+    return RevealResponse(
+        correct=is_correct(body.selected_keys, q.correct_keys),
+        correct_keys=q.correct_keys,
+        explanation_md=q.explanation_md,
     )
 
 

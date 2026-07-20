@@ -17,6 +17,7 @@ from app.typing.schemas import (
     TypingQueueResponse,
 )
 from app.typing.scoring import ClassicItem, score_classic_attempt, score_reaction_attempt
+from app.typing.selection import candidate_snippets
 
 router = APIRouter(prefix="/typing", tags=["typing"])
 
@@ -45,9 +46,9 @@ def _padded_shuffle(items: list[QueueItemOut]) -> list[QueueItemOut]:
 def get_queue(
     mode: Mode,
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> TypingQueueResponse:
-    snippets = db.query(TypingSnippet).all()
+    snippets = candidate_snippets(db, user.id)
     if not snippets:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "No typing snippets seeded yet")
 
@@ -86,11 +87,11 @@ def submit_attempt(
             ClassicItem(target=snippets[item.snippet_id].content, typed=item.typed)
             for item in body.classic_items
         ]
-        result = score_classic_attempt(classic_pairs, elapsed_s=body.elapsed_s)
         difficulty = round(
             sum(snippets[item.snippet_id].difficulty for item in body.classic_items)
             / len(body.classic_items)
         )
+        result = score_classic_attempt(classic_pairs, elapsed_s=body.elapsed_s, difficulty=difficulty)
 
         attempt = TypingAttempt(
             user_id=user.id,
@@ -121,11 +122,11 @@ def submit_attempt(
                 raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid line_index")
             line_results.append(lines_match(lines[item.line_index], item.typed))
 
-        result = score_reaction_attempt(line_results, elapsed_s=body.elapsed_s)
         difficulty = round(
             sum(snippets[item.snippet_id].difficulty for item in body.reaction_items)
             / len(body.reaction_items)
         )
+        result = score_reaction_attempt(line_results, elapsed_s=body.elapsed_s, difficulty=difficulty)
 
         attempt = TypingAttempt(
             user_id=user.id,

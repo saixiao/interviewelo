@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { typingApi } from './api'
 import { DiffText } from './DiffText'
 import { useCountdown } from '../../hooks/useCountdown'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { useStopwatch } from '../../hooks/useStopwatch'
 import { useKeystrokeFeedback } from './useKeystrokeFeedback'
 import { playDing } from './sound'
@@ -17,6 +19,7 @@ interface ClassicSessionProps {
 
 export function ClassicSession({ duration, onFinish, showFingerGuide }: ClassicSessionProps) {
   const isInfinite = duration === 0
+  const navigate = useNavigate()
   const [queue, setQueue] = useState<QueueItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [index, setIndex] = useState(0)
@@ -26,6 +29,10 @@ export function ClassicSession({ duration, onFinish, showFingerGuide }: ClassicS
   const pendingCursorRef = useRef<number | null>(null)
   const finishedRef = useRef(false)
   const { ref: shakeRef, triggerError, triggerCorrect } = useKeystrokeFeedback<HTMLDivElement>()
+
+  useEscapeKey(() => {
+    if (window.confirm('Abandon this session? Your progress will be lost.')) navigate('/')
+  })
 
   useEffect(() => {
     typingApi
@@ -87,32 +94,32 @@ export function ClassicSession({ duration, onFinish, showFingerGuide }: ClassicS
 
     if (value.length > typed.length) {
       const newCharIndex = value.length - 1
-      const isCorrectChar = value[newCharIndex] === current.content[newCharIndex]
-
-      if (!isCorrectChar) {
+      if (value[newCharIndex] !== current.content[newCharIndex]) {
         triggerError()
-      } else if (value[newCharIndex] === '\n' || newCharIndex === current.content.length - 1) {
-        // Just crossed a newline, or finished the snippet's last line -- check
-        // the whole line that just closed, not only the character that closed it.
-        const lineStart = current.content.lastIndexOf('\n', newCharIndex - 1) + 1
-        const lineEnd = value[newCharIndex] === '\n' ? newCharIndex : newCharIndex + 1
-        if (value.slice(lineStart, lineEnd) === current.content.slice(lineStart, lineEnd)) {
-          triggerCorrect()
-          playDing()
-        }
       }
     }
 
     setTyped(value)
-
-    if (value.length >= current.content.length) {
-      submissionsRef.current.push({ snippet_id: current.snippet_id, typed: value })
-      setIndex((i) => i + 1)
-      setTyped('')
-    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter') {
+      // Every snippet is a single line -- Enter is what submits it, never an
+      // auto-advance at content length, so overtyping/undertyping is always
+      // visible via the diff before the user commits.
+      e.preventDefault()
+
+      if (typed === current.content) {
+        triggerCorrect()
+        playDing()
+      }
+
+      submissionsRef.current.push({ snippet_id: current.snippet_id, typed })
+      setIndex((i) => i + 1)
+      setTyped('')
+      return
+    }
+
     if (e.key === 'Tab') {
       e.preventDefault()
       const el = e.currentTarget

@@ -1,5 +1,6 @@
 import pytest
 
+from app.typing.constants import CLASSIC_ACCURACY_WEIGHT
 from app.typing.scoring import ClassicItem, score_classic_attempt, score_reaction_attempt
 
 
@@ -25,10 +26,12 @@ def test_classic_undertyping_and_overtyping_both_penalized():
     assert long_.accuracy < 1.0
 
 
-def test_classic_score_zero_below_floor_wpm():
-    # 1 char typed in 60s is far below the 20 net-wpm floor
+def test_classic_score_below_floor_wpm_still_credits_accuracy():
+    # 1 char typed in 60s is far below the speed floor, but perfect accuracy
+    # is weighted directly now (not just as a squared multiplier on speed),
+    # so a slow-but-exact attempt isn't scored to zero.
     result = score_classic_attempt([ClassicItem(target="x", typed="x")], elapsed_s=60)
-    assert result.score == 0.0
+    assert result.score == pytest.approx(CLASSIC_ACCURACY_WEIGHT)
 
 
 def test_classic_score_one_above_ceiling_wpm():
@@ -52,6 +55,28 @@ def test_classic_empty_items_scores_zero():
 def test_classic_rejects_non_positive_elapsed():
     with pytest.raises(ValueError):
         score_classic_attempt([ClassicItem("a", "a")], elapsed_s=0)
+
+
+def test_classic_accuracy_weighted_higher_than_speed():
+    # Mirrors the same property already asserted for reaction mode: a full
+    # swing in speed should cost less than a full swing in accuracy.
+    text = "a" * 20
+    perfect_and_fast = score_classic_attempt([ClassicItem(text, text)], elapsed_s=1)
+    perfect_and_slow = score_classic_attempt([ClassicItem(text, text)], elapsed_s=60)
+    zero_accuracy_and_fast = score_classic_attempt([ClassicItem(text, "b" * 20)], elapsed_s=1)
+
+    drop_from_slow_speed = perfect_and_fast.score - perfect_and_slow.score
+    drop_from_zero_accuracy = perfect_and_fast.score - zero_accuracy_and_fast.score
+    assert drop_from_zero_accuracy > drop_from_slow_speed
+
+
+def test_classic_higher_difficulty_content_demands_more_speed_for_same_score():
+    # Progressive overload: the same typed speed should score worse against
+    # harder content, since the WPM ceiling climbs with difficulty.
+    text = "a" * 40
+    easy = score_classic_attempt([ClassicItem(text, text)], elapsed_s=20, difficulty=300)
+    hard = score_classic_attempt([ClassicItem(text, text)], elapsed_s=20, difficulty=2800)
+    assert hard.score < easy.score
 
 
 def test_reaction_all_correct_full_ratio():
@@ -89,3 +114,10 @@ def test_reaction_no_lines_scores_zero():
 def test_reaction_rejects_non_positive_elapsed():
     with pytest.raises(ValueError):
         score_reaction_attempt([True], elapsed_s=0)
+
+
+def test_reaction_higher_difficulty_content_demands_more_speed_for_same_score():
+    lines = [True] * 10
+    easy = score_reaction_attempt(lines, elapsed_s=60, difficulty=300)
+    hard = score_reaction_attempt(lines, elapsed_s=60, difficulty=2800)
+    assert hard.score < easy.score

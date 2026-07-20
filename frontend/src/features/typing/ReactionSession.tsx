@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { typingApi } from './api'
 import { useCountdown } from '../../hooks/useCountdown'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { useStopwatch } from '../../hooks/useStopwatch'
 import { useKeystrokeFeedback } from './useKeystrokeFeedback'
 import { playDing } from './sound'
@@ -16,6 +18,7 @@ interface ReactionSessionProps {
 
 export function ReactionSession({ duration, onFinish, showFingerGuide }: ReactionSessionProps) {
   const isInfinite = duration === 0
+  const navigate = useNavigate()
   const [queue, setQueue] = useState<QueueItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [index, setIndex] = useState(0)
@@ -24,6 +27,10 @@ export function ReactionSession({ duration, onFinish, showFingerGuide }: Reactio
   const inputRef = useRef<HTMLInputElement>(null)
   const finishedRef = useRef(false)
   const { ref: shakeRef, triggerError, triggerCorrect } = useKeystrokeFeedback<HTMLDivElement>()
+
+  useEscapeKey(() => {
+    if (window.confirm('Abandon this session? Your progress will be lost.')) navigate('/')
+  })
 
   useEffect(() => {
     typingApi

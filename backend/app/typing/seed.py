@@ -6,6 +6,7 @@ Run with: python -m app.typing.seed
 
 from app.db import SessionLocal
 from app.models import TypingSnippet
+from app.typing.difficulty import difficulty_for
 from app.typing.seed_data import SNIPPETS
 
 
@@ -13,13 +14,13 @@ def seed() -> int:
     db = SessionLocal()
     try:
         db.query(TypingSnippet).delete()
-        for content, difficulty in SNIPPETS:
+        for content in SNIPPETS:
             db.add(
                 TypingSnippet(
                     content=content,
-                    difficulty=difficulty,
+                    difficulty=difficulty_for(content),
                     char_count=len(content),
-                    line_count=content.count("\n") + 1,
+                    line_count=1,
                 )
             )
         db.commit()

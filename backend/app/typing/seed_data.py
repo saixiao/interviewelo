@@ -1,177 +1,122 @@
-"""Seed content for Typing Racer: real Python idioms of varying length and
-symbol density. Classic mode types these whole; Reaction mode splits
-multi-line entries into individual lines. `difficulty` is an Elo-scale
-content-difficulty rating (same scale as user ratings) used as `D` by the
-Elo engine.
+"""Seed content for Typing Racer: real Python idioms, always a single
+physical line (both modes type/react to one line at a time -- see
+CLAUDE.md). `difficulty` is *not* authored here: `seed.py` computes it from
+each line's own symbol density via `difficulty_for()` (difficulty.py), so
+the low-Elo end of the bank is mechanically limited to plain alphanumerics
+and the high-Elo end is guaranteed to demand real Shift/Caps-Lock density --
+that correlation is the whole point of the progressive-overload feel.
 """
 
-SNIPPETS: list[tuple[str, int]] = [
+SNIPPETS: list[str] = [
+    # --- bare minimum: digits, single assignment, no symbols beyond `=` ---
+    "x = 1",
+    "y = 2",
+    "n = 0",
+    "total = 0",
+    "count = 0",
+    "flag = True",
+    "value = None",
+    "done = False",
+    'name = "sam"',
+    "print(x)",
+    "x = x + 1",
+    "i += 1",
+    "a = b",
+    "nums = []",
+    "result = None",
+    "z = x + y",
+    "items = []",
+    "return dp[-1]",
+    "stack.append(node)",
+    "visited = set()",
+    "memo = {}",
+    "try:",
     # --- short idioms, low symbol density ---
-    ("nums = [1, 2, 3, 4, 5]", 300),
-    ("total = sum(nums)", 300),
-    ('d = {"a": 1, "b": 2}', 400),
-    ("x, y = y, x", 400),
-    ("keys = list(d.keys())", 400),
-    ("n = int(input())", 300),
-    ("unique = set(nums)", 400),
-    ("reversed_list = nums[::-1]", 500),
-    ("first, *rest = [1, 2, 3, 4]", 600),
-    ("merged = {**dict1, **dict2}", 700),
-    ("assert len(nums) > 0", 400),
-    ("return dp[-1]", 300),
-    ("stack.append(node)", 300),
-    ("visited = set()", 300),
-    ("memo = {}", 300),
-    ("class Solution:", 500),
-    ("try:", 300),
-    ("if x > 0 and y < 10:", 500),
-    ("while left < right:", 500),
-    ("for i, val in enumerate(nums):", 600),
+    "nums = [1, 2, 3, 4, 5]",
+    "total = sum(nums)",
+    'd = {"a": 1, "b": 2}',
+    "x, y = y, x",
+    "keys = list(d.keys())",
+    "n = int(input())",
+    "unique = set(nums)",
+    "reversed_list = nums[::-1]",
+    "first, *rest = [1, 2, 3, 4]",
+    "merged = {**dict1, **dict2}",
+    "assert len(nums) > 0",
+    "class Solution:",
+    "if x > 0 and y < 10:",
+    "while left < right:",
+    "for i, val in enumerate(nums):",
+    "elif isinstance(x, int):",
+    "except KeyError as e:",
+    "with open(path) as f:",
+    "@staticmethod",
+    "@classmethod",
+    "@property",
     # --- medium: comprehensions, lambdas, f-strings, common APIs ---
-    ("squares = [x**2 for x in range(10)]", 700),
-    ("evens = [x for x in nums if x % 2 == 0]", 800),
-    ("pairs = list(zip(a, b))", 700),
-    ("sorted_items = sorted(items, key=lambda x: x[1])", 900),
-    ("result = a if condition else b", 700),
-    ('s = f"{name}: {value:.2f}"', 800),
-    ("flattened = [x for row in matrix for x in row]", 1000),
-    ("return [i for i, x in enumerate(nums) if x == target]", 1000),
-    ("graph = collections.defaultdict(list)", 800),
-    ("heapq.heappush(heap, (-freq, num))", 900),
-    ("q = collections.deque()", 600),
-    ("count = collections.Counter(words)", 700),
-    ("nums.sort(key=lambda x: -x)", 800),
-    ("results = [y for x in data if (y := f(x)) is not None]", 1100),
-    ("@functools.lru_cache(maxsize=None)", 900),
-    ("def __init__(self, val=0, next=None):", 900),
-    # --- multi-line snippets (also drive Reaction mode) ---
-    (
-        "def two_sum(nums, target):\n"
-        "    seen = {}\n"
-        "    for i, num in enumerate(nums):\n"
-        "        complement = target - num\n"
-        "        if complement in seen:\n"
-        "            return [seen[complement], i]\n"
-        "        seen[num] = i\n"
-        "    return []",
-        1400,
-    ),
-    (
-        "def binary_search(nums, target):\n"
-        "    left, right = 0, len(nums) - 1\n"
-        "    while left <= right:\n"
-        "        mid = (left + right) // 2\n"
-        "        if nums[mid] == target:\n"
-        "            return mid\n"
-        "        elif nums[mid] < target:\n"
-        "            left = mid + 1\n"
-        "        else:\n"
-        "            right = mid - 1\n"
-        "    return -1",
-        1400,
-    ),
-    (
-        "def reverse_list(head):\n"
-        "    prev = None\n"
-        "    while head:\n"
-        "        next_node = head.next\n"
-        "        head.next = prev\n"
-        "        prev = head\n"
-        "        head = next_node\n"
-        "    return prev",
-        1300,
-    ),
-    (
-        "def dfs(graph, start, visited=None):\n"
-        "    if visited is None:\n"
-        "        visited = set()\n"
-        "    visited.add(start)\n"
-        "    for neighbor in graph[start]:\n"
-        "        if neighbor not in visited:\n"
-        "            dfs(graph, neighbor, visited)\n"
-        "    return visited",
-        1500,
-    ),
-    (
-        "@functools.lru_cache(maxsize=None)\n"
-        "def fib(n):\n"
-        "    if n <= 1:\n"
-        "        return n\n"
-        "    return fib(n - 1) + fib(n - 2)",
-        1000,
-    ),
-    (
-        "def partition(nums, low, high):\n"
-        "    pivot = nums[high]\n"
-        "    i = low - 1\n"
-        "    for j in range(low, high):\n"
-        "        if nums[j] <= pivot:\n"
-        "            i += 1\n"
-        "            nums[i], nums[j] = nums[j], nums[i]\n"
-        "    nums[i + 1], nums[high] = nums[high], nums[i + 1]\n"
-        "    return i + 1",
-        1700,
-    ),
-    (
-        "def max_subarray_sum(nums, k):\n"
-        "    window_sum = sum(nums[:k])\n"
-        "    max_sum = window_sum\n"
-        "    for i in range(k, len(nums)):\n"
-        "        window_sum += nums[i] - nums[i - k]\n"
-        "        max_sum = max(max_sum, window_sum)\n"
-        "    return max_sum",
-        1400,
-    ),
-    (
-        "class ListNode:\n"
-        "    def __init__(self, val=0, next=None):\n"
-        "        self.val = val\n"
-        "        self.next = next",
-        900,
-    ),
-    (
-        "class Timer:\n"
-        "    def __enter__(self):\n"
-        "        self.start = time.time()\n"
-        "        return self\n"
-        "\n"
-        "    def __exit__(self, *args):\n"
-        "        self.elapsed = time.time() - self.start",
-        1300,
-    ),
-    (
-        "def merge_sort(nums):\n"
-        "    if len(nums) <= 1:\n"
-        "        return nums\n"
-        "    mid = len(nums) // 2\n"
-        "    left = merge_sort(nums[:mid])\n"
-        "    right = merge_sort(nums[mid:])\n"
-        "    return merge(left, right)",
-        1500,
-    ),
-    (
-        "def retry(times=3):\n"
-        "    def decorator(func):\n"
-        "        def wrapper(*args, **kwargs):\n"
-        "            for attempt in range(times):\n"
-        "                try:\n"
-        "                    return func(*args, **kwargs)\n"
-        "                except Exception:\n"
-        "                    continue\n"
-        "        return wrapper\n"
-        "    return decorator",
-        1900,
-    ),
-    (
-        "def is_valid_parens(s):\n"
-        "    stack = []\n"
-        "    pairs = {')': '(', ']': '[', '}': '{'}\n"
-        "    for char in s:\n"
-        "        if char in pairs.values():\n"
-        "            stack.append(char)\n"
-        "        elif not stack or stack.pop() != pairs[char]:\n"
-        "            return False\n"
-        "    return not stack",
-        1600,
-    ),
+    "squares = [x**2 for x in range(10)]",
+    "evens = [x for x in nums if x % 2 == 0]",
+    "pairs = list(zip(a, b))",
+    "sorted_items = sorted(items, key=lambda x: x[1])",
+    "result = a if condition else b",
+    's = f"{name}: {value:.2f}"',
+    "flattened = [x for row in matrix for x in row]",
+    "return [i for i, x in enumerate(nums) if x == target]",
+    "graph = collections.defaultdict(list)",
+    "heapq.heappush(heap, (-freq, num))",
+    "q = collections.deque()",
+    "count = collections.Counter(words)",
+    "nums.sort(key=lambda x: -x)",
+    "results = [y for x in data if (y := f(x)) is not None]",
+    "@functools.lru_cache(maxsize=None)",
+    "def __init__(self, val=0, next=None):",
+    "pattern = re.compile(r'\\d+')",
+    "data = json.loads(response.text)",
+    "self.assertEqual(result, expected)",
+    "for key, value in sorted(d.items()):",
+    "return max(nums, key=lambda x: x.score)",
+    "filtered = list(filter(lambda x: x > 0, nums))",
+    "total = functools.reduce(lambda a, b: a + b, nums)",
+    "os.path.join(base_dir, 'data', filename)",
+    "logging.info('Processed %d items', count)",
+    "raise ValueError('invalid input')",
+    "return {'id': self.id, 'name': self.name}",
+    "def __eq__(self, other): return self.id == other.id",
+    # --- hard: type hints, decorators-with-args, dense one-liners ---
+    'def fib(n: int) -> int: return n if n <= 1 else fib(n - 1) + fib(n - 2)',
+    'config: Optional[Dict[str, Any]] = json.loads(raw) if raw else None',
+    'results: dict[str, list[int]] = {k: [v for v in vs if v > 0] for k, vs in data.items()}',
+    'matches = [m.group(1) for m in re.finditer(r"(\\w+)=(\\d+)", text)]',
+    'handler: Callable[[Request], Response] = lambda req: Response(status=200)',
+    'nodes = sorted(graph.nodes(), key=lambda n: (-n.priority, n.id))',
+    'mask = (flags & 0xFF) << 8 | (value >> 4)',
+    'pattern = re.compile(r"^[A-Za-z0-9_]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")',
+    '@dataclass(frozen=True, slots=True)',
+    'def __repr__(self) -> str: return f"<{self.__class__.__name__} id={self.id!r}>"',
+    'T = TypeVar("T", bound="BaseModel")',
+    'self._cache: Dict[Tuple[int, int], float] = {}',
+    'assert isinstance(value, (int, float)) and not isinstance(value, bool)',
+    'headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}',
+    '@functools.wraps(func)',
+    'raise ValueError(f"Expected {expected!r}, got {actual!r} instead")',
+    'return {**base_config, **overrides, "VERSION": VERSION}',
+    'bits = "".join(f"{b:08b}" for b in data)',
+    'xs = [x**2 if x % 2 == 0 else -x**2 for x in range(-10, 10)]',
+    '@app.route("/users/<int:user_id>", methods=["GET", "POST"])',
+    # --- hardest: everything at once -- generics, chained calls, escapes ---
+    'items = sorted(((k, v) for k, v in d.items() if v is not None), key=itemgetter(1), reverse=True)',
+    'response = {"status": "OK", "data": [x.to_dict() for x in results], "meta": {"count": len(results)}}',
+    'query = f"SELECT * FROM {table} WHERE id IN ({\',\'.join(map(str, ids))})"',
+    'on_click = lambda e: (e.preventDefault(), self.handle_submit(e))[-1]',
+    'self.__dict__.update({k: v for k, v in kwargs.items() if k in self.__slots__})',
+    '@retry(exceptions=(ConnectionError, TimeoutError), tries=3, backoff=2)',
+    'class Config(BaseModel): model_config = ConfigDict(frozen=True, extra="forbid")',
+    'return sorted(candidates, key=lambda c: (-c.score, c.name))[:TOP_K]',
+    'URL_PATTERN = re.compile(r"^(https?://)?([\\w.-]+)(:\\d+)?(/.*)?$", re.IGNORECASE)',
+    'assert all(isinstance(x, (int, float)) for x in values), f"Bad input: {values!r}"',
+    'EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")',
+    'SESSION_KEY_RE = re.compile(r"^sess_[A-Za-z0-9]{16}\\.[A-Za-z0-9_-]{20,}$")',
+    'REFRESH_TOKEN_RE = re.compile(r"^rt_[A-Za-z0-9]{16}\\.[A-Za-z0-9_-]{24,}$")',
+    'AUTH_HEADER_RE = re.compile(r"^Bearer\\s+([A-Za-z0-9\\-_.~+/]+=*)$", re.IGNORECASE)',
+    'DEFAULT_HEADERS: Final[Dict[str, str]] = {"X-Request-Id": uuid4().hex}',
 ]
